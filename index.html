@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>VR Lapangan Sepak Bola</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <!-- Kamera -->
+      <a-entity id="cameraRig" position="0 1.6 15">
+        <a-camera orbit-controls="target: 0 1 0; autoRotate: true;"></a-camera>
+      </a-entity>
+
+      <!-- Suara latar -->
+      <a-sound id="stadiumSound" src="url(/assets/sounds/training.mp3)" loop="true" volume="10"></a-sound>
+
+      <!-- Lapangan -->
+      <a-entity gltf-model="/assets/models/lapangan.glb" position="0 0 0" scale="1 1 1"></a-entity>
+
+      <!-- Bola-bola kecil -->
+      <a-entity gltf-model="/assets/models/bola.glb" position="4 0.5 5"  scale="0.15 0.15 0.15"></a-entity>
+
+      <!-- Kiper Tim A -->
+      <a-entity id="kiperA"
+      gltf-model="/assets/models/kiper.glb"
+      position="8 0 1"
+      rotation="0 0 0"
+      scale="0.5 0.5 0.5"
+      animation-mixer="clip: *"></a-entity>
+
+      <!-- Kiper Tim B -->
+      <a-entity id="kiperB"
+      gltf-model="/assets/models/kiper.glb"
+      position="-9 0 0"
+      rotation="0 0 0"
+      scale="0.5 0.5 0.5"
+      animation-mixer="clip: *"></a-entity>
+
+      <!-- Penonton -->
+      <a-entity gltf-model="/assets/models/penonton.glb" 
+      position="0.9 1.9 -9" 
+      scale="0.9 0.9 0.9" 
+      rotation="0 0 0"
+      animation-mixer="clip: *"></a-entity>
+
+      <a-entity gltf-model="/assets/models/penonton.glb" 
+      position="5 3 -10" 
+      scale="0.9 0.9 0.9" 
+      rotation="0 0 0"
+      animation-mixer="clip: *"></a-entity>
+
+      <!-- 10 Pemain -->
+      <!-- Akan di-generate lewat JavaScript -->
+
+      <!-- Pencahayaan -->
+      <a-light type="ambient" intensity="0.6"></a-light>
+      <a-light type="directional" intensity="1" position="0 10 5"></a-light>
+    </a-scene>
+
+    <script>
+      const scene = document.querySelector('a-scene');
+      const jumlahPemain = 10;
+
+      for (let i = 0; i < jumlahPemain; i++) {
+        const pemain = document.createElement('a-entity');
+        pemain.setAttribute('id', `pemain${i}`);
+        pemain.setAttribute('gltf-model', '/assets/models/pemain.glb');
+        pemain.setAttribute('scale', '0.5 0.5 0.5');
+        pemain.setAttribute('rotation', '0 -90 0');
+        pemain.setAttribute('animation-mixer', 'clip: *');
+
+        // Posisi awal: -5 hingga 5 di sumbu X, variasi di Z
+        const x = -5;
+        const z = -5 + i * 1.2;
+        pemain.setAttribute('position', `${x} 0 ${z}`);
+
+        scene.appendChild(pemain);
+
+        pemain.addEventListener('model-loaded', () => {
+          animatePemain(pemain, x, z);
+        });
+      }
+
+      function animatePemain(pemain, startX, zPos) {
+        let arahKanan = true;
+
+        function gerak() {
+          const toX = arahKanan ? 5 : -5;
+          const rotY = arahKanan ? 90 : -90;
+
+          pemain.setAttribute('rotation', `0 ${rotY} 0`);
+          pemain.setAttribute('animation__move', {
+            property: 'position',
+            to: `${toX} 0 ${zPos}`,
+            dur: 4000 + Math.random() * 1000, // Biar nggak sama semua
+            easing: 'linear',
+          });
+        }
+
+        pemain.addEventListener('animationcomplete__move', () => {
+          arahKanan = !arahKanan;
+          gerak();
+        });
+
+        gerak();
+      }
+
+      const sound = document.querySelector('#stadiumSound');
+
+      function playSoundOnce() {
+        sound.components.sound.playSound(); // Mainkan manual
+        window.removeEventListener('click', playSoundOnce);
+      }
+
+      window.addEventListener('click', playSoundOnce);
+    </script>
+  </body>
+</html>
