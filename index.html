@@ -8,41 +8,51 @@
     <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.controls.min.js"></script>
     <style>
       body { margin: 0; overflow: hidden; }
+      #toggleModeBtn {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        padding: 10px 20px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 10px;
+        z-index: 9999;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
+    <button id="toggleModeBtn">Mode Gelap</button>
+
     <a-scene>
-      <!-- Kamera bebas gerak, bisa terbang dan zoom -->
+      <!-- Kamera -->
       <a-entity id="cameraRig"
                 position="0 1.6 15"
                 movement-controls="fly: true; speed: 0.2">
         <a-camera look-controls camera="zoom: 1" id="mainCamera"></a-camera>
       </a-entity>
 
-      <!-- Suara latar -->
+      <!-- Suara -->
       <a-sound id="stadiumSound" src="url(/assets/sounds/training.mp3)" loop="true" volume="10"></a-sound>
 
-      <!-- Lapangan -->
+      <!-- Lapangan & Pemain -->
       <a-entity gltf-model="/assets/models/lapangan.glb" position="0 0 0" scale="1 1 1"></a-entity>
-
-      <!-- Bola -->
       <a-entity gltf-model="/assets/models/bola.glb" position="4 0.5 5" scale="0.15 0.15 0.15"></a-entity>
-
-      <!-- Kiper Tim A -->
       <a-entity gltf-model="/assets/models/kiper.glb" position="8 0 1" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: *"></a-entity>
-
-      <!-- Kiper Tim B -->
       <a-entity gltf-model="/assets/models/kiper.glb" position="-9 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: *"></a-entity>
-
-      <!-- Penonton -->
       <a-entity gltf-model="/assets/models/penonton.glb" position="0.9 1.9 -9" scale="0.9 0.9 0.9" rotation="0 0 0" animation-mixer="clip: *"></a-entity>
       <a-entity gltf-model="/assets/models/penonton.glb" position="5 3 -10" scale="0.9 0.9 0.9" rotation="0 0 0" animation-mixer="clip: *"></a-entity>
 
-      <!-- Pemain akan di-generate lewat JavaScript -->
+      <!-- Lampu Ambient & Directional -->
+      <a-light id="ambientLight" type="ambient" intensity="0.6"></a-light>
+      <a-light id="directionalLight" type="directional" intensity="1" position="0 10 5"></a-light>
 
-      <!-- Pencahayaan -->
-      <a-light type="ambient" intensity="0.6"></a-light>
-      <a-light type="directional" intensity="1" position="0 10 5"></a-light>
+      <!-- Lampu Lapangan (spotlight kiri & kanan) -->
+      <a-light id="lampuKiri" type="spot" position="-10 10 0" angle="30" penumbra="0.2" intensity="0" target="#targetLapangan"></a-light>
+      <a-light id="lampuKanan" type="spot" position="10 10 0" angle="30" penumbra="0.2" intensity="0" target="#targetLapangan"></a-light>
+      <a-entity id="targetLapangan" position="0 0 0"></a-entity>
     </a-scene>
 
     <script>
@@ -69,11 +79,9 @@
 
       function animatePemain(pemain, startX, zPos) {
         let arahKanan = true;
-
         function gerak() {
           const toX = arahKanan ? 5 : -5;
           const rotY = arahKanan ? 90 : -90;
-
           pemain.setAttribute('rotation', `0 ${rotY} 0`);
           pemain.setAttribute('animation__move', {
             property: 'position',
@@ -82,12 +90,10 @@
             easing: 'linear',
           });
         }
-
         pemain.addEventListener('animationcomplete__move', () => {
           arahKanan = !arahKanan;
           gerak();
         });
-
         gerak();
       }
 
@@ -98,12 +104,10 @@
       }
       window.addEventListener('click', playSoundOnce);
 
-      // Zoom in/out dengan scroll mouse
+      // Zoom kamera
       const camera = document.querySelector('#mainCamera');
       let currentZoom = 1;
-
       window.addEventListener('wheel', function (e) {
-        // Zoom in = scroll ke atas, Zoom out = scroll ke bawah
         if (e.deltaY < 0) {
           currentZoom = Math.max(0.5, currentZoom - 0.1);
         } else {
@@ -111,6 +115,48 @@
         }
         camera.setAttribute('camera', 'zoom', currentZoom);
       });
+
+      // Mode Gelap / Terang
+      const toggleBtn = document.getElementById('toggleModeBtn');
+      const ambientLight = document.querySelector('#ambientLight');
+      const directionalLight = document.querySelector('#directionalLight');
+      const lampuKiri = document.querySelector('#lampuKiri');
+      const lampuKanan = document.querySelector('#lampuKanan');
+
+      let isDark = false;
+
+      toggleBtn.addEventListener('click', () => {
+        isDark = !isDark;
+
+        if (isDark) {
+          toggleBtn.innerText = 'Mode Terang';
+          ambientLight.setAttribute('intensity', 0.2);
+          directionalLight.setAttribute('intensity', 0.2);
+          fadeLampu(lampuKiri, 0.8);
+          fadeLampu(lampuKanan, 0.8);
+        } else {
+          toggleBtn.innerText = 'Mode Gelap';
+          ambientLight.setAttribute('intensity', 0.6);
+          directionalLight.setAttribute('intensity', 1);
+          fadeLampu(lampuKiri, 0);
+          fadeLampu(lampuKanan, 0);
+        }
+      });
+
+      function fadeLampu(lampu, targetIntensity) {
+        const durasi = 500;
+        const step = 50;
+        const awal = parseFloat(lampu.getAttribute('intensity'));
+        const selisih = targetIntensity - awal;
+        let waktu = 0;
+
+        const interval = setInterval(() => {
+          waktu += step;
+          const nilaiBaru = awal + (selisih * waktu / durasi);
+          lampu.setAttribute('intensity', nilaiBaru.toFixed(2));
+          if (waktu >= durasi) clearInterval(interval);
+        }, step);
+      }
     </script>
   </body>
 </html>
