@@ -5,12 +5,18 @@
     <title>VR Lapangan Sepak Bola</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.controls.min.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+    </style>
   </head>
   <body>
     <a-scene>
-      <!-- Kamera -->
-      <a-entity id="cameraRig" position="0 1.6 15">
-        <a-camera orbit-controls="target: 0 1 0; autoRotate: true;"></a-camera>
+      <!-- Kamera bebas gerak, bisa terbang dan zoom -->
+      <a-entity id="cameraRig"
+                position="0 1.6 15"
+                movement-controls="fly: true; speed: 0.2">
+        <a-camera look-controls camera="zoom: 1" id="mainCamera"></a-camera>
       </a-entity>
 
       <!-- Suara latar -->
@@ -19,40 +25,20 @@
       <!-- Lapangan -->
       <a-entity gltf-model="/assets/models/lapangan.glb" position="0 0 0" scale="1 1 1"></a-entity>
 
-      <!-- Bola-bola kecil -->
-      <a-entity gltf-model="/assets/models/bola.glb" position="4 0.5 5"  scale="0.15 0.15 0.15"></a-entity>
+      <!-- Bola -->
+      <a-entity gltf-model="/assets/models/bola.glb" position="4 0.5 5" scale="0.15 0.15 0.15"></a-entity>
 
       <!-- Kiper Tim A -->
-      <a-entity id="kiperA"
-      gltf-model="/assets/models/kiper.glb"
-      position="8 0 1"
-      rotation="0 0 0"
-      scale="0.5 0.5 0.5"
-      animation-mixer="clip: *"></a-entity>
+      <a-entity gltf-model="/assets/models/kiper.glb" position="8 0 1" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: *"></a-entity>
 
       <!-- Kiper Tim B -->
-      <a-entity id="kiperB"
-      gltf-model="/assets/models/kiper.glb"
-      position="-9 0 0"
-      rotation="0 0 0"
-      scale="0.5 0.5 0.5"
-      animation-mixer="clip: *"></a-entity>
+      <a-entity gltf-model="/assets/models/kiper.glb" position="-9 0 0" rotation="0 0 0" scale="0.5 0.5 0.5" animation-mixer="clip: *"></a-entity>
 
       <!-- Penonton -->
-      <a-entity gltf-model="/assets/models/penonton.glb" 
-      position="0.9 1.9 -9" 
-      scale="0.9 0.9 0.9" 
-      rotation="0 0 0"
-      animation-mixer="clip: *"></a-entity>
+      <a-entity gltf-model="/assets/models/penonton.glb" position="0.9 1.9 -9" scale="0.9 0.9 0.9" rotation="0 0 0" animation-mixer="clip: *"></a-entity>
+      <a-entity gltf-model="/assets/models/penonton.glb" position="5 3 -10" scale="0.9 0.9 0.9" rotation="0 0 0" animation-mixer="clip: *"></a-entity>
 
-      <a-entity gltf-model="/assets/models/penonton.glb" 
-      position="5 3 -10" 
-      scale="0.9 0.9 0.9" 
-      rotation="0 0 0"
-      animation-mixer="clip: *"></a-entity>
-
-      <!-- 10 Pemain -->
-      <!-- Akan di-generate lewat JavaScript -->
+      <!-- Pemain akan di-generate lewat JavaScript -->
 
       <!-- Pencahayaan -->
       <a-light type="ambient" intensity="0.6"></a-light>
@@ -71,11 +57,9 @@
         pemain.setAttribute('rotation', '0 -90 0');
         pemain.setAttribute('animation-mixer', 'clip: *');
 
-        // Posisi awal: -5 hingga 5 di sumbu X, variasi di Z
         const x = -5;
         const z = -5 + i * 1.2;
         pemain.setAttribute('position', `${x} 0 ${z}`);
-
         scene.appendChild(pemain);
 
         pemain.addEventListener('model-loaded', () => {
@@ -94,7 +78,7 @@
           pemain.setAttribute('animation__move', {
             property: 'position',
             to: `${toX} 0 ${zPos}`,
-            dur: 4000 + Math.random() * 1000, // Biar nggak sama semua
+            dur: 4000 + Math.random() * 1000,
             easing: 'linear',
           });
         }
@@ -108,13 +92,25 @@
       }
 
       const sound = document.querySelector('#stadiumSound');
-
       function playSoundOnce() {
-        sound.components.sound.playSound(); // Mainkan manual
+        sound.components.sound.playSound();
         window.removeEventListener('click', playSoundOnce);
       }
-
       window.addEventListener('click', playSoundOnce);
+
+      // Zoom in/out dengan scroll mouse
+      const camera = document.querySelector('#mainCamera');
+      let currentZoom = 1;
+
+      window.addEventListener('wheel', function (e) {
+        // Zoom in = scroll ke atas, Zoom out = scroll ke bawah
+        if (e.deltaY < 0) {
+          currentZoom = Math.max(0.5, currentZoom - 0.1);
+        } else {
+          currentZoom = Math.min(5, currentZoom + 0.1);
+        }
+        camera.setAttribute('camera', 'zoom', currentZoom);
+      });
     </script>
   </body>
 </html>
